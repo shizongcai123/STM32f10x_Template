@@ -1,0 +1,1 @@
+# This is STM32f10x standard firmware library. It can be downloaded from the STM32 Official website.

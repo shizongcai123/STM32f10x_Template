@@ -23,6 +23,7 @@ OBJDUMP=$(CROSS_COMPILE)objdump
 # 注意，如果使用.c的startup文件，请把下面两句注释掉，避免编译出现错误
 #######################################
 ASM_SOURCES =  $(CORE_DIR)/startup_stm32f10x_md.s
+# ASM_SOURCES =  $(CORE_DIR)/startup_stm32f103xb.s
 
 #######################################
 # CFLAGS

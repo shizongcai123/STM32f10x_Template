@@ -1,35 +1,9 @@
-# STM32F10X_Template
+## CMSIS (Cortex Microcontroller Software Interface Standard): It contains the standard software interface specifications for ARM Cortex-M processor cores. It provides a set of standardized APIs and data structures for accessing the processor and peripherals. This folder includes necessary header and source files to support low-level system initialization and interrupt handling.
 
-![](https://img.shields.io/badge/build-passing-brightgreen)
+## Device: It contains device-specific files for a particular chip model. These files describe the registers, peripheral addresses, and functionalities of the chip, which are used during programming.
 
-作者： [chenxiaoquan233](https://github.com/chenxiaoquan233)
+## Libraries: This folder contains library files for different peripherals. Each subfolder represents a specific peripheral, such as GPIO, USART, SPI, etc. Inside each peripheral folder, you can find related header and source files, along with functions for initializing and configuring the peripherals.
 
-<!-- TOC -->
-## 目录
-- [简介](#简介)
-- [运行环境](#运行环境)
-- [使用方法](#使用方法)
-- [Todo](#todo)
-- [Change log](#change-log)
-- [交流反馈](#交流反馈)
-<!-- /TOC -->
+## Projects: It includes some sample projects that demonstrate the usage of the STM32 microcontroller and its peripherals. These projects serve as references for developing your own applications and provide examples of how to configure and use different features of the microcontroller.
 
-## 简介
-使用arm-none-eabi-gcc在linux上交叉编译stm32f10x程序的项目模板  
-在Ubuntu19.10上编译通过
-
-## 运行环境
-GNU/Linux, arm-none-eabi-gcc 7.3.1
-
-## 使用方法
-在USER文件夹下添加代码,填写main.c的main函数和init函数,然后通过makefile编译  
-具体操作可参考个人博客:[Ubuntu编译STM32程序](https://xqchen.site/%e7%a1%ac%e4%bb%b6/ubuntu%e7%bc%96%e8%af%91stm32%e7%a8%8b%e5%ba%8f/)
-
-## Todo
-
-## Change log
-
-## 交流反馈
-[chenxiaoquan233](https://github.com/chenxiaoquan233):  
-邮箱: chenxiaoquan233@gmail.com  
-QQ: 770355275
+These folders collectively provide the necessary resources and code to develop firmware for STM32 microcontrollers using the standard firmware library.
