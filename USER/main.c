@@ -1,43 +1,84 @@
 #include "stm32f10x.h"
-// #include "stm32f10x_rcc.h"
-// #include "stm32f10x_gpio.h"
-// #include "stm32f10x_tim.h"
+#include "stm32f10x_rcc.h"
+#include "stm32f10x_gpio.h"
+#include "stm32f10x_tim.h"
 
-void delay_ms(uint32_t ms) {
-    for (uint32_t i = 0; i < ms; i++) {
-        for (volatile uint32_t j = 0; j < 2000; j++);
+void GPIO_Configuration(void);
+void PWM_Configuration(void);
+void delay(uint32_t milliseconds);
+
+int main() {
+    GPIO_Configuration();
+    PWM_Configuration();
+
+    while (1) {
+        // 在此处进行PWM占空比的调节
+
+        // 逐渐增加占空比
+        for (int i = 0; i <= 100; i++) {
+            TIM_SetCompare1(TIM2, i); // 用于设置TIM2通道1的比较值的函数
+            delay(10); // 等待一段时间
+        }
+
+        // 逐渐减小占空比
+        for (int i = 100; i >= 0; i--) {
+            TIM_SetCompare1(TIM2, i);
+            delay(10); // 等待一段时间
+        }
     }
 }
 
-int main(void) {
-    // 初始化GPIO引脚
-    RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOA, ENABLE);
-    GPIO_InitTypeDef gpio_init;
-    gpio_init.GPIO_Pin = GPIO_Pin_0;
-    gpio_init.GPIO_Mode = GPIO_Mode_Out_PP;
-    gpio_init.GPIO_Speed = GPIO_Speed_2MHz;
-    GPIO_Init(GPIOA, &gpio_init);
+void GPIO_Configuration(void) {
+    // 使能GPIOA和TIM2的时钟
+    RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOA | RCC_APB2Periph_AFIO, ENABLE);
+    RCC_APB1PeriphClockCmd(RCC_APB1Periph_TIM2, ENABLE);
 
-    // 初始化定时器
-    RCC_APB1PeriphClockCmd(RCC_APB1Periph_TIM3, ENABLE);
-    TIM_TimeBaseInitTypeDef timer_init;
-    timer_init.TIM_Prescaler = 7200 - 1;  // 72 MHz / 7200 = 10 kHz
-    timer_init.TIM_CounterMode = TIM_CounterMode_Up;
-    timer_init.TIM_Period = 10000 - 1;  // 定时器以固定的频率生成事件（例如中断），计算 TIM_Period 值时要确保结果不超过定时器计数器的最大值
-    timer_init.TIM_ClockDivision = TIM_CKD_DIV1;
-    timer_init.TIM_RepetitionCounter = 0;
-    TIM_TimeBaseInit(TIM3, &timer_init);
+    // 配置GPIOA的第0号引脚为复用推挽输出
+    // GPIOA的0号引脚与TIM2的通道1通过复用功能相关联。
+    //在GPIO配置中，我们将GPIOA的0号引脚设置为复用推挽输出模式(GPIO_Mode_AF_PP), 这意味着该引脚将用于复用功能，也就是PWM输出
+    GPIO_InitTypeDef GPIO_InitStruct;
+    GPIO_InitStruct.GPIO_Pin = GPIO_Pin_0;
+    GPIO_InitStruct.GPIO_Mode = GPIO_Mode_AF_PP;
+    GPIO_InitStruct.GPIO_Speed = GPIO_Speed_50MHz;
+    GPIO_Init(GPIOA, &GPIO_InitStruct);
+}
 
-    // 启动定时器
-    TIM_Cmd(TIM3, ENABLE);
+void PWM_Configuration(void) {
+    // 配置TIM2作为PWM输出
 
-    while (1) {
-        // 检查定时器溢出标志
-        if (TIM_GetFlagStatus(TIM3, TIM_FLAG_Update) == SET) {
-            TIM_ClearFlag(TIM3, TIM_FLAG_Update);  // 清除溢出标志
+    // 配置PWM频率为1kHz
+    uint16_t PrescalerValue = (uint16_t)(SystemCoreClock / 1000000) - 1; //1MHz的计数频率  stm32f103的SystemCoreClock=72 MHz
+    uint16_t Period = 1000; // 1kHz的PWM周期 = PrescalerValue/Period
+    //         __________        __________
+    //        |          |      |          |
+    // _______|          |______|          |_______//这就是占空比70%的波形
+    //        <---PWM周期时间--->
 
-            // LED状态翻转
-            GPIO_WriteBit(GPIOA, GPIO_Pin_0, !GPIO_ReadOutputDataBit(GPIOA, GPIO_Pin_0));
-        }
+    TIM_TimeBaseInitTypeDef TIM_TimeBaseInitStruct;
+    TIM_TimeBaseInitStruct.TIM_Prescaler = PrescalerValue;
+    TIM_TimeBaseInitStruct.TIM_Period = Period;
+    TIM_TimeBaseInitStruct.TIM_ClockDivision = 0;
+    TIM_TimeBaseInitStruct.TIM_CounterMode = TIM_CounterMode_Up;
+    TIM_TimeBaseInit(TIM2, &TIM_TimeBaseInitStruct);
+
+    // 配置TIM2的通道1作为PWM输出
+    TIM_OCInitTypeDef TIM_OCInitStruct;
+    TIM_OCInitStruct.TIM_OCMode = TIM_OCMode_PWM1;
+    TIM_OCInitStruct.TIM_OutputState = TIM_OutputState_Enable;
+    TIM_OCInitStruct.TIM_Pulse = 0; // 初始占空比为0
+    TIM_OCInitStruct.TIM_OCPolarity = TIM_OCPolarity_High;
+    TIM_OC1Init(TIM2, &TIM_OCInitStruct);
+
+    // 启动TIM2
+    TIM_Cmd(TIM2, ENABLE);
+}
+
+void delay(uint32_t milliseconds) {
+    // Assuming 72MHz system clock
+    // Adjust the loop count based on your system clock frequency
+
+    // Each iteration of this loop takes approximately 1 millisecond
+    for (uint32_t i = 0; i < (milliseconds * 8000); i++) {
+        __NOP();
     }
 }

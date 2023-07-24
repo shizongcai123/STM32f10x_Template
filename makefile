@@ -5,8 +5,8 @@ CORE_DIR = CORE
 BIN_DIR = BIN
 
 #设定包含文件目录
-INC_FLAGS += -I $(TOP)/Library/CORE
-INC_FLAGS += -I $(TOP)/Library/FWLIB/inc
+INC_FLAGS += -I $(TOP)/CORE
+INC_FLAGS += -I $(TOP)/FWLIB/inc
 INC_FLAGS += -I $(TOP)/User
 
 CROSS_COMPILE=arm-none-eabi-
@@ -63,7 +63,7 @@ CFLAGS += -MMD -MP -MF"$(addprefix $(BUILD_DIR)/, $(notdir $(@:%.o=%.d)))"
 #######################################
 # LDFLAGS
 #######################################
-# LD文件  
+# LD文件,链接文件
 LDSCRIPT = STM32F10x.ld
 
 # libraries
