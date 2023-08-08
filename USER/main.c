@@ -66,6 +66,55 @@ void delay(uint32_t ms)
     }
 }
 
+// 接收数据从 USART1
+// void USART1_ReceiveData(char* recv_buffer)
+// {
+//     static char receivedData[20]; // Use static to retain the value across function calls
+//     int i = 0;
+
+//     while (1)
+//     {
+//         if (USART_GetFlagStatus(USART1, USART_FLAG_RXNE) != RESET) {
+//             char receivedChar = USART_ReceiveData(USART1);
+
+//             // Check for the end of the number (newline or carriage return)
+//             if (receivedChar == '\n' || receivedChar == '\r')
+//                 break;
+
+//             receivedData[i] = receivedChar;
+//             i++;
+
+//             // Prevent buffer overflow
+//             if (i >= sizeof(receivedData) - 1)
+//                 break;
+//         }
+
+//     }
+
+//     receivedData[i] = '\0'; // Null-terminate the string
+//     strcpy(recv_buffer, receivedData); // Copy the received data to the recv_buffer
+// }
+
+// void USART1_ReceiveData(char* recv_buffer)
+// {
+
+//     while (1)
+//     {
+//         if (USART_GetFlagStatus(USART1, USART_FLAG_RXNE) != RESET) {
+//             char receivedChar = USART_ReceiveData(USART1);
+
+//             // Check for the end of the number (newline or carriage return)
+//             if (receivedChar == '\n' || receivedChar == '\r')
+//                 break;
+
+//             *recv_buffer = receivedChar;
+//             recv_buffer ++;
+//         }
+
+//     }
+//     *recv_buffer = '\0';
+// }
+
 
 // 接收数据从 USART1
 int USART1_ReceiveData()
@@ -88,17 +137,7 @@ int USART1_ReceiveData()
     return atoi(receivedData); // Convert string to integer using atoi function
 }
 
-// char USART1_ReceiveData()
-// {
-//     while (!(USART1->SR & USART_SR_RXNE)); // 等待接收缓冲区非空
-//     return USART_ReceiveData(USART1);      // 返回接收的数据
-// }
 
-// char USART1_ReceiveData()
-// {
-//     while (USART_GetFlagStatus(USART1, USART_FLAG_RXNE) == RESET);
-//     return USART_ReceiveData(USART1);
-// }
 
 int main()
 {

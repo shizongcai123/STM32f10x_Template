@@ -1,5 +1,7 @@
 #include "stm32f10x.h"
 #include <stm32f10x_usart.h>
+#include <stdio.h>
+#include <stdlib.h>
 // 初始化串口
 void USART1_Init()
 {
@@ -32,7 +34,9 @@ void USART1_Init()
     USART_InitStruct.USART_StopBits = USART_StopBits_1;
     USART_InitStruct.USART_Parity = USART_Parity_No;
     USART_InitStruct.USART_HardwareFlowControl = USART_HardwareFlowControl_None;
-    USART_InitStruct.USART_Mode = USART_Mode_Tx;
+    USART_InitStruct.USART_Mode = USART_Mode_Tx | USART_Mode_Rx;
+    //USART_Mode_Tx: 该模式表示使能串口的发送功能，
+    //USART_Mode_Rx: 该模式表示使能串口的接收功能（Receiver Mode）
     USART_Init(USART1, &USART_InitStruct);
 
     // 使能 USART1
@@ -62,33 +66,78 @@ void delay(uint32_t ms)
     }
 }
 
-
-// // 接收数据从 USART1
-// int USART1_ReceiveData()
+// 接收数据从 USART1
+// void USART1_ReceiveData(char* recv_buffer)
 // {
-//     char receivedData[20];
+//     static char receivedData[20]; // Use static to retain the value across function calls
 //     int i = 0;
 
 //     while (1)
 //     {
-//         char receivedChar = USART_ReceiveData(USART1);
+//         if (USART_GetFlagStatus(USART1, USART_FLAG_RXNE) != RESET) {
+//             char receivedChar = USART_ReceiveData(USART1);
 
-//         // Check for the end of the number (newline or carriage return)
-//         if (receivedChar == '\n' || receivedChar == '\r')
-//             break;
+//             // Check for the end of the number (newline or carriage return)
+//             if (receivedChar == '\n' || receivedChar == '\r')
+//                 break;
 
-//         receivedData[i++] = receivedChar;
+//             receivedData[i] = receivedChar;
+//             i++;
+
+//             // Prevent buffer overflow
+//             if (i >= sizeof(receivedData) - 1)
+//                 break;
+//         }
+
 //     }
 
 //     receivedData[i] = '\0'; // Null-terminate the string
-//     return atoi(receivedData); // Convert string to integer using atoi function
+//     strcpy(recv_buffer, receivedData); // Copy the received data to the recv_buffer
 // }
 
-char USART1_ReceiveData()
+// void USART1_ReceiveData(char* recv_buffer)
+// {
+
+//     while (1)
+//     {
+//         if (USART_GetFlagStatus(USART1, USART_FLAG_RXNE) != RESET) {
+//             char receivedChar = USART_ReceiveData(USART1);
+
+//             // Check for the end of the number (newline or carriage return)
+//             if (receivedChar == '\n' || receivedChar == '\r')
+//                 break;
+
+//             *recv_buffer = receivedChar;
+//             recv_buffer ++;
+//         }
+
+//     }
+//     *recv_buffer = '\0';
+// }
+
+
+// 接收数据从 USART1
+int USART1_ReceiveData()
 {
-    while (!(USART1->SR & USART_SR_RXNE)); // 等待接收缓冲区非空
-    return USART_ReceiveData(USART1);      // 返回接收的数据
+    char receivedData[20];
+    int i = 0;
+
+    while (1)
+    {
+        char receivedChar = USART_ReceiveData(USART1);
+
+        // Check for the end of the number (newline or carriage return)
+        if (receivedChar == '\n' || receivedChar == '\r')
+            break;
+
+        receivedData[i++] = receivedChar;
+    }
+
+    receivedData[i] = '\0'; // Null-terminate the string
+    return atoi(receivedData); // Convert string to integer using atoi function
 }
+
+
 
 int main()
 {
@@ -107,17 +156,10 @@ int main()
         USART1_SendString("Send a number to increment:\r\n");
 
         // 接收数据从串口
-        receivedData = USART1_ReceiveData();
+        USART1_ReceiveData();
 
-        // Increment the received number
-        int num = receivedData - '0'; // Convert ASCII char to integer
-        num += 2;
-
-        // Convert the incremented number back to a string
-        sprintf(sendData, "Result: %d\r\n", num);
-
-        // 发送结果到串口
-        USART1_SendString(sendData);
+        
+        USART1_SendString("Send a number to increment:2222\r\n");
 
         // 延时1秒
         delay(1000);

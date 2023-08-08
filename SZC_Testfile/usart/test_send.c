@@ -1,4 +1,7 @@
 #include "stm32f10x.h"
+#include <stm32f10x_usart.h>
+#include <stdio.h>
+#include <stdlib.h>
 
 // 初始化串口
 void USART1_Init()
@@ -50,7 +53,7 @@ void USART1_SendString(char* str)
         //USART模块的数据寄存器是8位的，因此在发送数据时，只能一次传输一个字节（8位）。
         //而且在USART_SendData函数中有USARTx->DR = (Data & (uint16_t)0x01FF); 数据实际上取的是16位中的后9位 (高位[8:0]低位)，去掉了高7位
         //The mask 0x1FF ensures that only these 9 bits are used in the presumably 16-bit RxBuffer[0], and that bits [15:9] are all zero. 
-        //[Commonly, you would receive 8-bit data over a USART/UART](it means that we can receive 7 or 8 bit is supported) but the STM32 USART supports 7, 8 and 9 bit frames.
+        //[Commonly, you would receive 8-bit data over a USART/UART](it means that we can receive 7 or 9 bit is supported) but the STM32 USART supports 7, 8 and 9 bit frames.
         
         //And, 9-bit frames are typically used to implement single master/multiple slave bus protocols, 
         //where the 9th (MSB) bit is indicates whether the preceding 8-bits should be interpreted as address or as data.

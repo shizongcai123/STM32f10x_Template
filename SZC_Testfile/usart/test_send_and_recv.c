@@ -1,4 +1,7 @@
 #include "stm32f10x.h"
+#include <stm32f10x_usart.h>
+#include <stdio.h>
+#include <stdlib.h>
  
 void USART1_Init(void);
 void USART1_SendData(uint8_t data);
