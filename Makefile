@@ -49,17 +49,33 @@ MCU = $(CPU) -mthumb $(FPU) $(FLOAT-ABI)
 # C defines
 # 这个地方的定义根据实际情况来，如果在代码里面有定义(如#define STM32F10X_HD)，这里可以不写
 C_DEFS =  \
--D USE_STDPERIPH_DRIVER \
--D STM32F10X_MD
+-D USE_STDPERIPH_DRIVER \ #这个宏定义用于开启或启用一个名为 USE_STDPERIPH_DRIVER 的特性。可能是为了启用标准外设驱动库（Standard Peripheral Library）的相关功能
+-D STM32F10X_MD # 这个宏定义是针对 STM32F10x 系列微控制器的。STM32F10X_MD 可能是指示编译器在编译过程中针对 STM32F10x 系列的微控制器进行适当的配置和优化。
 
 # PreProcess
 CFLAGS =  -g $(MCU) $(C_DEFS) $(INC_FLAGS) $(OPT) -std=gnu99 -W -Wall -fdata-sections -ffunction-sections
+# -std=gnu99: 这个选项指定使用 C99 标准的 GNU 扩展，以确定源代码中可以使用的语法和特性。
+# -W -Wall: 这些选项启用了编译器的警告，其中 -W 表示启用所有警告，-Wall 表示启用常见的警告
+# -fdata-sections -ffunction-sections: 这些选项启用了代码和数据分区。/
+#    使用这些选项，编译器会尝试将不同的函数和数据放置在独立的节（sections）中，这有助于优化内存使用和执行速度
+
+
 
 #ifeq ($(DEBUG), 1)
 #CFLAGS += -g -gdwarf-2
 #endif
 # 在$(BUILD_DIR)目录下生成依赖关系信息，依赖关系以.d结尾
 CFLAGS += -MMD -MP -MF"$(addprefix $(BUILD_DIR)/, $(notdir $(@:%.o=%.d)))"
+# -MMD: 这个选项告诉编译器在编译源代码的同时生成依赖关系文件（Dependency Files）。依赖
+# -MP: 这个选项生成一个伪目标（Phony Target），用于确保在重新编译时更新依赖关系。这是为了防止因为某个头文件的改变而导致重新编译出现问题。
+# -MF"$(addprefix $(BUILD_DIR)/, $(notdir $(@:%.o=%.d)))": 这个选项用于指定生成的依赖关系文件的路径和文件名。
+
+# $@：这是一个Makefile中的自动变量，表示当前规则中的目标文件名。
+# %.o：这是一个模式，表示所有以 .o 为扩展名的文件。
+# %.d：这也是一个模式，表示所有以 .d 为扩展名的文件。
+# 所以，$(@:%.o=%.d) 这个表达式的意思是，将当前规则的目标文件名中的 .o 扩展名替换为 .d 扩展名，从而得到对应的依赖关系文件名。
+
+
 
 #######################################
 # LDFLAGS
@@ -92,6 +108,13 @@ all: $(BUILD_DIR)/$(TARGET).elf $(BIN_DIR)/$(TARGET).hex $(BIN_DIR)/$(TARGET).bi
 # 从vpath中读取所有的.c文件，编译成.o文件
 $(BUILD_DIR)/%.o: %.c | $(BUILD_DIR)
 	$(CC) -c $(CFLAGS) -Wa,-a,-ad,-alms=$(BUILD_DIR)/$(notdir $(<:.c=.lst)) -o $@ $<
+#比如：
+# $(BUILD_DIR)/%.o: %.c | $(BUILD_DIR)
+#     $(CC) -c $(CFLAGS) -o $@ $<
+# 就会被翻译成
+# $(CC) -c $(CFLAGS) -o build/example.o example.c
+
+
 # 从vpath中u读取所有的.s文件，编译成.o文件
 $(BUILD_DIR)/%.o: $(CORE_DIR)/%.s | $(BUILD_DIR)
 	$(ASM) -c $< -o $@

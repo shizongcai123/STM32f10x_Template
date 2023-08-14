@@ -119,7 +119,7 @@ void delay(uint32_t ms)
 // 接收数据从 USART1
 int USART1_ReceiveData()
 {
-    char receivedData[20];
+    char receivedChar;
     int i = 0;
 
     while (1)
@@ -133,7 +133,6 @@ int USART1_ReceiveData()
         receivedData[i++] = receivedChar;
     }
 
-    receivedData[i] = '\0'; // Null-terminate the string
     return atoi(receivedData); // Convert string to integer using atoi function
 }
 
