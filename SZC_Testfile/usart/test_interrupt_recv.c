@@ -55,7 +55,27 @@ void USART1_Send_String(uint8_t *Data) //发送字符串；
     while(*Data)
     USART1_Send_Byte(*Data++);
 }
- 
+
+uint8_t USART1_Receive_Byte(void) //接收一个字节；
+{
+    while (USART_GetFlagStatus(USART1, USART_FLAG_RXNE) == RESET); // 等待接收缓冲区非空
+    return USART_ReceiveData(USART1); // 返回接收到的字节
+}
+
+void USART1_Receive_String(uint8_t *Buffer, uint16_t MaxLength) //接收字符串；
+{
+    uint16_t count = 0;
+    while (count < MaxLength - 1) // 保留一个位置存放字符串结束符 '\0'
+    {
+        Buffer[count] = USART1_Receive_Byte(); // 逐个接收字节
+        if (Buffer[count] == '\n' || Buffer[count] == '\r') // 到达换行或回车符，结束接收
+            break;
+        count++;
+    }
+    Buffer[count] = '\0'; // 字符串结束符
+}
+
+
 void USART1_IRQHandler(void) //中断处理函数；这是因为在ST标准库中，
                             //已经在启动文件（startup_stm32f10x_md.s或startup_stm32f10x_hd.s等）中完成了中断向量表的设置和初始化
                             //定义这个函数，然后USART1就会在中断时触发这个

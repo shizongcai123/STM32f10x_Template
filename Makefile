@@ -49,8 +49,11 @@ MCU = $(CPU) -mthumb $(FPU) $(FLOAT-ABI)
 # C defines
 # 这个地方的定义根据实际情况来，如果在代码里面有定义(如#define STM32F10X_HD)，这里可以不写
 C_DEFS =  \
--D USE_STDPERIPH_DRIVER \ #这个宏定义用于开启或启用一个名为 USE_STDPERIPH_DRIVER 的特性。可能是为了启用标准外设驱动库（Standard Peripheral Library）的相关功能
--D STM32F10X_MD # 这个宏定义是针对 STM32F10x 系列微控制器的。STM32F10X_MD 可能是指示编译器在编译过程中针对 STM32F10x 系列的微控制器进行适当的配置和优化。
+-DUSE_STDPERIPH_DRIVER \
+-DSTM32F10X_MD\
+#USE_STDPERIPH_DRIVER这个宏定义用于开启或启用一个名为 USE_STDPERIPH_DRIVER 的特性。可能是为了启用标准外设驱动库（Standard Peripheral Library）的相关功能
+# STM32F10X_MD这个宏定义是针对 STM32F10x 系列微控制器的。STM32F10X_MD 可能是指示编译器在编译过程中针对 STM32F10x 系列的微控制器进行适当的配置和优化。
+
 
 # PreProcess
 CFLAGS =  -g $(MCU) $(C_DEFS) $(INC_FLAGS) $(OPT) -std=gnu99 -W -Wall -fdata-sections -ffunction-sections
@@ -127,13 +130,20 @@ $(BUILD_DIR)/%.o: $(CORE_DIR)/%.s | $(BUILD_DIR)
 # 	$(LD) -T $(LDSCRIPT) $(LIBS) $(C_OBJ)    -o $@
 #需这里改成用编译器  arm-none-eabi-gcc 来将这些目标文件链接起来，$(LDFLAGS) 表示链接时需要的其他选项
 ##还有一个附加的命令 $(SZ) $@，它使用了 $(SZ) 工具来计算生成的可执行文件的大小
+
+
 $(BUILD_DIR)/$(TARGET).elf: $(C_OBJ) Makefile
 	$(CC) $(C_OBJ) $(LDFLAGS) -o $@
+#第一个 $(C_OBJ)：它作为规则的依赖项，表示目标文件的依赖项。这意味着在生成 $(BUILD_DIR)/$(TARGET).elf 目标文件之前，
+#   会检查 $(C_OBJ) 中的所有目标文件是否存在，并且是否需要重新构建。如果其中任何一个目标文件发生了更改，整个规则将重新执行，重新生成目标文件。
+#   -o $@：这个选项指定生成的输出文件的名称，其中 $@ 是自动变量，表示规则的目标文件名。在这里，生成的可执行文件就是 $(BUILD_DIR)/$(TARGET).elf
+
+
 
 # 将.elf文件转为.hex格式
 $(BIN_DIR)/%.hex: $(BUILD_DIR)/%.elf
 	$(OBJCOPY) -O ihex $< $@
-	
+
 # 将.elf文件转为.bin格式
 $(BIN_DIR)/%.bin: $(BUILD_DIR)/%.elf
 	$(OBJCOPY) -O binary $< $@	
