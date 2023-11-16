@@ -5,7 +5,7 @@
 #include "stm32f10x_gpio.h"
 
 // MPU6050地址
-// #define MPU6050_ADDRESS 0xD0//不是他妈的0x68
+// #define MPU6050_ADDRESS 0xD0//不是0x68
 
 #define	SMPLRT_DIV	0x19	//陀螺仪输出率的分频，典型值0x07,(1kHz)
 #define	CONFIG		0x1A	//低通滤波频率,一般0x01~0x05,数值越大带宽越小延时越长
@@ -28,39 +28,77 @@
 #define	PWR_MGMT_1	0x6B	//电源管理，典型值：0x00(正常启用)
 #define	WHO_AM_I	0x75	//IIC地址寄存器(默认数值0x68，只读)
 #define	SlaveAddress	0xD0 	//MPU6050模块AD0引脚接低电平时的地址
+#define FLAG_HEAD0  0xce
+#define FLAG_HEAD1  0xfa
+#define FLAG_TAIL   0xaa
 
 // 函数声明
+void USART1_SendInt16(int16_t value);
 void I2C_Config(void);
 void USART1_SendString(char* str);
+void USART1_Send_Datas(uint8_t *Data, uint16_t size);
+
 void USART1_Init(void);
 void InitMPU6050(void);
 void I2C_WriteByte(uint8_t REG_Address,uint8_t REG_data);
 uint8_t I2C_ReadByte(uint8_t REG_Address);
 unsigned int GetData(unsigned char REG_Address);
 void GetAccGyro(void);
-int16_t acc1[3]={0};
+int16_t acc1[3]={0};//int16_t [-32768, 32767]
 int16_t gyr1[3]={0};
+
+typedef struct TxProtocol{
+    uint8_t head0;
+    uint8_t head1;
+
+    int16_t ax;
+    int16_t ay;
+    int16_t az;
+  
+} TxProtocol;
 
 int main(void) {
     // 初始化I2C
     USART1_Init();
-    USART1_SendString("USART1_Init ok\r\n");
+    // USART1_SendString("USART1_Init ok\r\n");
     I2C_Config();
     // 初始化MPU6050
-    USART1_SendString("I2C_Config ok\r\n");
+    // USART1_SendString("I2C_Config ok\r\n");
     InitMPU6050();
-    USART1_SendString("MPU6050_Init ok\r\n");
-
+    // USART1_SendString("MPU6050_Init ok\r\n");
     while (1) {
-        GetAccGyro();
-        USART1_SendString("read gyroData ok\r\n");
+        GetAccGyro();//不断的获取MPU6050寄存器里的数据
+        // USART_SendData(USART1,'x');
+        TxProtocol accdata;
+        accdata.head0 = FLAG_HEAD0;
+        accdata.head1 = FLAG_HEAD1;
+        accdata.ax = acc1[0];
+        accdata.ay = acc1[1];
+        accdata.az = acc1[2];
+        // while (USART_GetFlagStatus(USART1, USART_FLAG_TXE) == RESET);//必须等待发送寄存器位空，否者接收不到正确的数据
+        // USART_SendData(USART1, FLAG_HEAD0); // 发送低8位
+        // while (USART_GetFlagStatus(USART1, USART_FLAG_TXE) == RESET);//必须等待发送寄存器位空，否者接收不到正确的数据
+        // USART_SendData(USART1, FLAG_HEAD1); // 发送低8位
+        USART1_Send_Datas((uint8_t*)&accdata, sizeof(accdata));
+        // int16_t test_data = 1800;
+        // int16_t test_data2 = -1800;
+        // int16_t test_data3 = 3325;
+        // USART1_SendInt16(test_data);
+        // USART1_SendInt16(test_data2);
+        // USART1_SendInt16(test_data3);
 
-    // uint8_t lowByte = (uint8_t)gyroData[0];          // 低8位字节
-    // uint8_t highByte = (uint8_t)(gyroData[0] >> 8);  // 高8位字节
-    // USART1_SendData(lowByte);
-    // USART1_SendData(highByte);
-    // 处理数据
     }
+}
+
+
+void USART1_SendInt16(int16_t value) {
+    uint8_t lowByte = (uint8_t)(value & 0x00FF); // 获取低8位
+    uint8_t highByte = (uint8_t)((value&0xFF00) >> 8); // 获取高8位
+
+    while (USART_GetFlagStatus(USART1, USART_FLAG_TXE) == RESET);//必须等待发送寄存器位空，否者接收不到正确的数据
+    USART_SendData(USART1, lowByte); // 发送低8位
+    while (USART_GetFlagStatus(USART1, USART_FLAG_TXE) == RESET); //必须等待发送寄存器位空，否者接收不到正确的数据
+    USART_SendData(USART1, highByte); // 发送高8位
 }
 
 void I2C_Config(void) {
@@ -128,13 +166,14 @@ void USART1_Init(void)
 
 void InitMPU6050(void)
 {
-    USART1_SendString("解除休眠状态\r\n");
+    // USART1_SendString("解除休眠状态\r\n");
     I2C_WriteByte(PWR_MGMT_1,0x00);     //解除休眠状态
-    USART1_SendString("陀螺仪采样率1kHz\r\n");
+    // USART1_SendString("陀螺仪采样率1kHz\r\n");
     I2C_WriteByte(SMPLRT_DIV,0x07);     //陀螺仪采样率1kHz
     I2C_WriteByte(CONFIG,0x02);         //设置低通滤波器
     I2C_WriteByte(GYRO_CONFIG,0x18);    //陀螺仪量程2000deg/s
     I2C_WriteByte(ACCEL_CONFIG,0x08);   //加速度量程4g
+    // I2C_WriteByte(ACCEL_CONFIG,0x00);   //加速度量程2g
 }
 
 void USART1_SendString(char* str)
@@ -145,6 +184,13 @@ void USART1_SendString(char* str)
         while (!(USART1->SR & USART_SR_TXE));//USART1->SR表示串口1的寄存器的状态，然后和USART_SR_TXE标志符按位与。
         USART_SendData(USART1, *str);
         str++;
+    }
+}
+void USART1_Send_Datas(uint8_t *Data, uint16_t size) //发送字符串；
+{
+    while(size--) {
+        while (USART_GetFlagStatus(USART1, USART_FLAG_TXE) == RESET);
+        USART_SendData(USART1,*Data++);
     }
 }
 

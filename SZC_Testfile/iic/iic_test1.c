@@ -1,3 +1,5 @@
+
+//This test is unworkable because of the incorrect order of the I2C send.
 #include "stm32f10x.h"
 #include "stm32f10x_i2c.h"
 #include "stm32f10x_usart.h"

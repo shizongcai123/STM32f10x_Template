@@ -5,7 +5,7 @@
 #include "stm32f10x_gpio.h"
 
 // MPU6050地址
-// #define MPU6050_ADDRESS 0xD0//不是他妈的0x68
+// #define MPU6050_ADDRESS 0xD0//不是0x68
 
 #define	SMPLRT_DIV	0x19	//陀螺仪输出率的分频，典型值0x07,(1kHz)
 #define	CONFIG		0x1A	//低通滤波频率,一般0x01~0x05,数值越大带宽越小延时越长
@@ -30,6 +30,7 @@
 #define	SlaveAddress	0xD0 	//MPU6050模块AD0引脚接低电平时的地址
 
 // 函数声明
+void USART1_SendInt16(int16_t value);
 void I2C_Config(void);
 void USART1_SendString(char* str);
 void USART1_Init(void);
@@ -38,29 +39,51 @@ void I2C_WriteByte(uint8_t REG_Address,uint8_t REG_data);
 uint8_t I2C_ReadByte(uint8_t REG_Address);
 unsigned int GetData(unsigned char REG_Address);
 void GetAccGyro(void);
-int16_t acc1[3]={0};
+int16_t acc1[3]={0};//int16_t [-32768, 32767]
 int16_t gyr1[3]={0};
+
+int16_t acc[3]={0};
+int16_t gyr[3]={0};
 
 int main(void) {
     // 初始化I2C
     USART1_Init();
-    USART1_SendString("USART1_Init ok\r\n");
+    // USART1_SendString("USART1_Init ok\r\n");
     I2C_Config();
     // 初始化MPU6050
-    USART1_SendString("I2C_Config ok\r\n");
+    // USART1_SendString("I2C_Config ok\r\n");
     InitMPU6050();
-    USART1_SendString("MPU6050_Init ok\r\n");
-
+    // USART1_SendString("MPU6050_Init ok\r\n");
     while (1) {
         GetAccGyro();
-        USART1_SendString("read gyroData ok\r\n");
-
-    // uint8_t lowByte = (uint8_t)gyroData[0];          // 低8位字节
-    // uint8_t highByte = (uint8_t)(gyroData[0] >> 8);  // 高8位字节
+        acc1[0] = (int16_t)20;
+        acc1[1] = (int16_t)500;
+        acc1[2] = (int16_t)32763;
+        // USART1_SendString("read gyroData ok, start to send data\r\n");
+        for(int i = 0; i<3; i++){
+            uint8_t lowByte = (uint8_t)acc1[i]&0X00FF;          // 低8位字节
+            uint8_t highByte = (uint8_t)((acc1[i]&0XFF00) >> 8); 
+            while (USART_GetFlagStatus(USART1, USART_FLAG_TXE) == RESET);//必须等待发送寄存器位空，否者接收不到正确的数据
+            USART_SendData(USART1,lowByte);
+            while (USART_GetFlagStatus(USART1, USART_FLAG_TXE) == RESET);//必须等待发送寄存器位空，否者接收不到正确的数据
+            USART_SendData(USART1,highByte);
+        }
+ // 高8位字节
     // USART1_SendData(lowByte);
     // USART1_SendData(highByte);
     // 处理数据
     }
+}
+
+
+void USART1_SendInt16(int16_t value) {
+    uint8_t lowByte = (uint8_t)(value & 0xFF); // 获取低8位
+    uint8_t highByte = (uint8_t)((value >> 8) & 0xFF); // 获取高8位
+
+    while (USART_GetFlagStatus(USART1, USART_FLAG_TXE) == RESET); // 等待发送寄存器为空
+    USART_SendData(USART1, (uint16_t)lowByte); // 发送低8位
+    while (USART_GetFlagStatus(USART1, USART_FLAG_TXE) == RESET); // 等待发送寄存器为空
+    USART_SendData(USART1, (uint16_t)highByte); // 发送高8位
 }
 
 void I2C_Config(void) {
@@ -128,9 +151,9 @@ void USART1_Init(void)
 
 void InitMPU6050(void)
 {
-    USART1_SendString("解除休眠状态\r\n");
+    // USART1_SendString("解除休眠状态\r\n");
     I2C_WriteByte(PWR_MGMT_1,0x00);     //解除休眠状态
-    USART1_SendString("陀螺仪采样率1kHz\r\n");
+    // USART1_SendString("陀螺仪采样率1kHz\r\n");
     I2C_WriteByte(SMPLRT_DIV,0x07);     //陀螺仪采样率1kHz
     I2C_WriteByte(CONFIG,0x02);         //设置低通滤波器
     I2C_WriteByte(GYRO_CONFIG,0x18);    //陀螺仪量程2000deg/s
@@ -201,3 +224,21 @@ void GetAccGyro(void)//读取6轴数据
     gyr1[1] = GetData(GYRO_YOUT_H);
     gyr1[2] = GetData(GYRO_ZOUT_H);
 }
+
+
+// void RectifyData(void)//校准偏差、换算单位
+// {
+//     u8 i;                                 
+//     acc[0] = (acc1[0] - a);
+//     acc[1] = (acc1[1] - b);
+//     acc[2] = (acc1[2] - c + 8192);
+//     gyr[0] = (gyr1[0] - d);
+//     gyr[1] = (gyr1[1] - e);
+//     gyr[2] = (gyr1[2] - f);
+// //a,b,c,d,e,f为校准偏差时测得的平均值，写程序的时候直接带入即可
+//     for(i=0; i<3; i++)
+//     {
+//         acc[i] /= 8192.0f;
+//         gyr[i] /= 16.384f;
+//     }
+// }
