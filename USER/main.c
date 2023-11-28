@@ -50,10 +50,12 @@ int16_t gyr1[3]={0};
 typedef struct TxProtocol{
     uint8_t head0;
     uint8_t head1;
-
     int16_t ax;
     int16_t ay;
     int16_t az;
+    int16_t gx;
+    int16_t gy;
+    int16_t gz;
   
 } TxProtocol;
 
@@ -69,17 +71,19 @@ int main(void) {
     while (1) {
         GetAccGyro();//不断的获取MPU6050寄存器里的数据
         // USART_SendData(USART1,'x');
-        TxProtocol accdata;
-        accdata.head0 = FLAG_HEAD0;
-        accdata.head1 = FLAG_HEAD1;
-        accdata.ax = acc1[0];
-        accdata.ay = acc1[1];
-        accdata.az = acc1[2];
-        // while (USART_GetFlagStatus(USART1, USART_FLAG_TXE) == RESET);//必须等待发送寄存器位空，否者接收不到正确的数据
-        // USART_SendData(USART1, FLAG_HEAD0); // 发送低8位
-        // while (USART_GetFlagStatus(USART1, USART_FLAG_TXE) == RESET);//必须等待发送寄存器位空，否者接收不到正确的数据
-        // USART_SendData(USART1, FLAG_HEAD1); // 发送低8位
-        USART1_Send_Datas((uint8_t*)&accdata, sizeof(accdata));
+        TxProtocol mpudata;
+        mpudata.head0 = FLAG_HEAD0;
+        mpudata.head1 = FLAG_HEAD1;
+        //一般来说，水平静止时的值在理论值±几百之内是合理的，说明传感器没有问题
+        mpudata.ax = acc1[0];//AccX: -417
+        mpudata.ay = acc1[1];//AccY: -30
+        mpudata.az = acc1[2];//AccZ: 7785,加速度量程4g，所以理论值是2^16/4 = 8192,加速度数值为正，说明方向是z轴反方向。
+        mpudata.gx = gyr1[0];//GyrX: -69
+        mpudata.gy = gyr1[1];//GyrY: -6
+        mpudata.gz = gyr1[2];//GyrZ: 3
+
+
+        USART1_Send_Datas((uint8_t*)&mpudata, sizeof(mpudata));
         // int16_t test_data = 1800;
         // int16_t test_data2 = -1800;
         // int16_t test_data3 = 3325;
@@ -140,12 +144,12 @@ void USART1_Init(void)
     // 使能USART1的时钟
     // 配置USART1的GPIO引脚
 
-    GPIO_InitStruct.GPIO_Pin = GPIO_Pin_9;
+    GPIO_InitStruct.GPIO_Pin = GPIO_Pin_9;//TX
     GPIO_InitStruct.GPIO_Mode = GPIO_Mode_AF_PP;
     GPIO_InitStruct.GPIO_Speed = GPIO_Speed_50MHz;
     GPIO_Init(GPIOA, &GPIO_InitStruct);
  
-    GPIO_InitStruct.GPIO_Pin = GPIO_Pin_10;
+    GPIO_InitStruct.GPIO_Pin = GPIO_Pin_10;//RX
     GPIO_InitStruct.GPIO_Mode = GPIO_Mode_IN_FLOATING;
     GPIO_Init(GPIOA, &GPIO_InitStruct);
  
